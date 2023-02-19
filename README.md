@@ -1,7 +1,7 @@
 # macroPhotoShooter
 
 ## Overview
-Control Canon R5 camera wirelessly via Canon's CCAPI RESTful interface, and a 3D Printer bed serially via GCode/MCode to create multiple images for macrophotograghy. The printer bed acts as a slide for the subject while the camera stays still. The program determines the Depth Of Field based on user input, then controls the bed's Y-axis movement between camera captures.
+Control Canon R5 camera wirelessly via Canon's CCAPI RESTful interface, and a 3D Printer bed serially via GCode/MCode to create multiple images for macrophotography. The printer bed acts as a slide for the subject while the camera stays still. The program determines the Depth Of Field based on user input, then controls the bed's Y-axis movement between camera captures.
 
 Developed with:
 |Program|Version|
