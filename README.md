@@ -11,6 +11,7 @@ Developed with:
 
 ## My Setup
 ![my setup](images/macroSetup_1_300w.jpg) ![nut pic](images/dt_output2_1_104_300w.jpg)
+
 The serial connection between my laptop and the **Anycubic I3 Mega** printer is USB. The printer supports Y-axis accuracy to 0.0125mm.
 
 The Canon Camera Control API (CCAPI) interface is available via the [Canon Developer Community](https://developercommunity.usa.canon.com/s/). You must become a member of this community and they will supply a utility to activate the CCAPI on your supported Canon camera. (**Note:** Canon link is to Canon's USA community, you may have to find the community for your continent )
