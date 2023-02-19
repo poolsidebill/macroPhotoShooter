@@ -22,3 +22,11 @@ Code base was written in Python 3 and tested on Linux Mint 20.3
 - **macroPhotoShooter.py** - Main program. Establishes a connection to both printer and the R5. Prompts user to enter F-Stop, Lens focal length, Subject size, and Distance to Subject. Program determines the Depth of Field and computes the number of increments required to capture the entire subject. Program will loop between bed movement and image capture untill the required number of increments have been reached.
 - **r5_cameraUtils.py** - Utilities controlling the R5 camera and image collection
 - **gcodeUtils.py** - Utilities controlling 3D Printer and bed placement
+
+## General Info
+- All measurements are in millimeters - so much easier that way
+- Subject images will be shot starting from front and working toward the back of the subject
+- Camera should be in manual mode and prefocused on a spot on the subject **closest** to the camera
+- Prior to the start of shooting, the bed will move away from focus point to ensure the closest point of the subject is captured
+- As shooting progresses, the subject will move closer to the camera. Ensure your lighting stays consistent and shadows do not creep in unexpectedly
+- Canon CCAPI does not currently allow creating folders to hold these images. Start each shooting session with a new folder on the camera to hold the images captured.
