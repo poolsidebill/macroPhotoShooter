@@ -30,3 +30,12 @@ Code base was written in Python 3 and tested on Linux Mint 20.3
 - Prior to the start of shooting, the bed will move away from focus point to ensure the closest point of the subject is captured
 - As shooting progresses, the subject will move closer to the camera. Ensure your lighting stays consistent and shadows do not creep in unexpectedly
 - Canon CCAPI does not currently allow creating folders to hold these images. Start each shooting session with a new folder on the camera to hold the images captured.
+
+## Things to Do
+ (no particular order)
+- graphical frontend
+- Checks to ensure subject length isn't too large for bed movement from current starting point
+- Planning only option. Display various Depth of Field values and projected image counts for various F-Stop and subject lengths
+- Lighting monitor. Precheck lighting conditions between starting and ending bed postions with the subject
+- Move images from camera to computer (via CCAPI) for later image stacking
+- Update code comments
