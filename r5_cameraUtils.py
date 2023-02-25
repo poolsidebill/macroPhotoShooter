@@ -185,6 +185,56 @@ def shootR5Image(session, apiURL=API_URL, af=True):
 
     return success
 
+def getImage(session, imagePath,  apiURL=API_URL):
+    """ Get an image from camera folder
+
+    Retrieve an image and reports an error message if it was not able to
+    fetch it. Fetches the JPEG version of image
+
+    Inputs:
+       session - Session object currently connected to camera
+       imagePath - CCAPI resource path of image to be fetched
+                 (i.e. /ccapi/ver130/contents/sd/111STRB3/IMG_7935.JPG )
+       apiURL - domain and port URL
+
+     Returns:
+       resp - response payload from CCAPI
+    """
+    params = "?kind=display" # fetch the JPEG version
+    response = sendR5CcapiReq(session, imagePath, apiURL)
+    #print(" headers = ", response.headers)
+    #print(" Content-Type = ", response.headers.get("Content-Type"))
+    return response
+
+def saveImageLocal(session, resourcePath,  apiURL=API_URL):
+    """ Get an image from camera and save it locally
+
+    Retrieve an image from camera and save it in the current directory.
+    Saved file has same name as found in the resourcePath
+
+    Inputs:
+       session - Session object currently connected to camera
+       resourcePath - CCAPI resource path of image to be fetched and saved
+                 (i.e. /ccapi/ver130/contents/sd/111STRB3/IMG_7935.JPG )
+       apiURL - domain and port URL
+
+     Returns:
+       success - True or False based on if file was saved locally or not
+    """
+    success = False
+    result = getImage(session, resourcePath,  apiURL)
+    if result.status_code == 200:
+        pathList = resourcePath.split("/") # parse the resource
+        with open(pathList[-1],"wb") as f:
+           f.write(result.content)
+        f.close()
+        success = True
+    else:
+        print("saveImageLocal: Error saving file ", resourcePath, " status_code=",result.status_code)
+        success = False
+
+    return success
+
 def deleteImage(session, imagePath,  apiURL=API_URL):
     """ Remove image from camera folder
 
@@ -208,6 +258,9 @@ def deleteImage(session, imagePath,  apiURL=API_URL):
         print(statusTxt.format(sc=response.status_code, msg=respDict.get("message")))
     return response
 
+# -------------------------------------
+# Start general photographic utilities
+# -------------------------------------
 
 def depthOfField(dist=400, fStop=2.8,focalLen=100, coc=R5_COC ):
     """ Determine Depth Of Field for camera/lens configuration.
@@ -244,18 +297,29 @@ def main():
     dirEntryText = "test_1_dir: path <{p}> has <{e}> entries with a page count of <{c}>"
     print(dirEntryText.format(p=path, e=numEntries, c=pageCnt))
 
-    # test_2 - take a picture, report imageName, delete image
+    # test_2 - take a picture, report imageName, save locally,  delete image
     result = getLastEvent(r5Session) #clear polling buffer in camera
 
     result = shootR5Image(session=r5Session, af=False)
     print("test_2: Image captured: ", result)
 
+    time.sleep(1) # must wait for image to be stored and poller to register it
+
     result = getLastEvent(r5Session)         # get all events from polling buffer
     addedList = result.get("addedcontents")  # only care about image(s) added
     print("test_2_addedImage: ", addedList )
 
-    result = deleteImage(r5Session, addedList[0] )
-    print("test_2_delete: image delete results = ", result.status_code) # s/b 200 for success
+    if not addedList == None:
+        status = saveImageLocal(r5Session, addedList[0])
+        print("test_2_localSave: file ",addedList[0], " saved: ", status)
+
+        result = deleteImage(r5Session, addedList[0] )
+        print("test_2_delete: image delete results = ", result.status_code) # s/b 200 for success
+    else:
+        # polling via getLastEvent() doesn't always return saved file even through
+        # is is saved on the camera. I believe this script runs faster than camera can
+        # save image and update polling buffer. Might have investigate adding time delays
+        print("\n\tError: unable to get image name that got created from polling interface\n")
 
     # test_3 - depthOfField()
     print("test_3: DOF=",depthOfField()," stacking DOF=",round((depthOfField()*.8),2))
