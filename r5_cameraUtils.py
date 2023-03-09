@@ -7,6 +7,7 @@ import requests
 from requests.exceptions import Timeout
 import time
 import math
+import os
 
 # Constants
 API_URL = "http://192.168.1.188:8080" # my harcoded network endpoint for camera
@@ -206,6 +207,55 @@ def getImage(session, imagePath,  apiURL=API_URL):
     #print(" Content-Type = ", response.headers.get("Content-Type"))
     return response
 
+def copyFiles(session, addedList):
+    """ Retrieve camera images and store them locally
+
+    Query user for a directory name to copy files into. Create the directory
+    if needed. If no directory is specified, use current directory as the destination.
+    Cycle through input list of resource images, fetch and save file locally. Names of
+    files are listed after copied.
+
+    Inputs:
+       session - Session object currently connected to camera
+       addedList - List of CCAPI resource path(s) of image(s) to be fetched
+                 (i.e. /ccapi/ver130/contents/sd/111STRB3/IMG_7935.JPG )
+
+     Returns:
+       results - boolean if files were saved
+    """
+    results = False
+    # query for folder name and create it
+    dirName = input("\t Enter a directory name to create: ")
+    # print("\n\t input directory name = <{}>".format(dirName))
+    currentDir = os.getcwd()
+    try:
+        if dirName == "":
+            print("\t No directory specified, using current working directory: ", currentDir)
+        else:
+            # create directory if it doesn't exist
+            newDir = currentDir+"/"+dirName
+            if not os.path.exists(newDir):
+              os.mkdir(newDir)
+            os.chdir(newDir) # go to specified directory
+
+        # get files and copy them into local directory
+        for image in range(len(addedList)):
+            success, fName = saveImageLocal(session, addedList[image])
+            print("\t\t File: {} saved locally as {}".format(addedList[image], fName))
+
+        os.chdir(currentDir) # got back to where we started
+        print("") # give us some space on the responses
+        results = True
+
+    except FileExistsError:
+        print("\t Error: could not create new directory "+newDir)
+    except FileNotFoundError:
+        # chdir() did not work or the path was not correct
+        print("\t Error: unable to move into new directory "+newDir)
+
+    return results
+
+
 def saveImageLocal(session, resourcePath,  apiURL=API_URL):
     """ Get an image from camera and save it locally
 
@@ -219,13 +269,16 @@ def saveImageLocal(session, resourcePath,  apiURL=API_URL):
        apiURL - domain and port URL
 
      Returns:
-       success - True or False based on if file was saved locally or not
+       success  - True or False based on if file was saved locally or not
+       filename - Name of file saved (parsed from resourcePath)
     """
     success = False
+    filename = ""
     result = getImage(session, resourcePath,  apiURL)
     if result.status_code == 200:
         pathList = resourcePath.split("/") # parse the resource
-        with open(pathList[-1],"wb") as f:
+        filename = pathList[-1]
+        with open(filename,"wb") as f:
            f.write(result.content)
         f.close()
         success = True
@@ -233,7 +286,7 @@ def saveImageLocal(session, resourcePath,  apiURL=API_URL):
         print("saveImageLocal: Error saving file ", resourcePath, " status_code=",result.status_code)
         success = False
 
-    return success
+    return success, filename
 
 def deleteImage(session, imagePath,  apiURL=API_URL):
     """ Remove image from camera folder
@@ -310,7 +363,8 @@ def main():
     print("test_2_addedImage: ", addedList )
 
     if not addedList == None:
-        status = saveImageLocal(r5Session, addedList[0])
+        # status = saveImageLocal(r5Session, addedList[0])
+        status = copyFiles(r5Session, addedList)
         print("test_2_localSave: file ",addedList[0], " saved: ", status)
 
         result = deleteImage(r5Session, addedList[0] )
