@@ -23,6 +23,8 @@
        of only one.
 
 """
+import os
+import subprocess
 from r5_cameraUtils import *
 from gcodeUtils import *
 
@@ -85,7 +87,7 @@ def decodeTime(seconds):
 
 def printShotEstimate(bedMoveIncrement, numShots):
     timeGuess = round(numShots * 1.1, 0) #
-    shotClockTxt = "\t Bed movement per shot = {bm} Number of shots = {ns}  estimated time (HH:MM:SS) = {et}"
+    shotClockTxt = "\t Bed movement per shot = {bm}mm Number of shots = {ns}  estimated time (HH:MM:SS) = {et}"
     print("\n")
     print("++" * 50)
     print( shotClockTxt.format(bm=bedMoveIncrement, ns=numShots, et=decodeTime(timeGuess)))
@@ -118,8 +120,10 @@ try:
                     print("\n")
                     break
             # ready for the shots to begin
-            # move printer to start positioning
+            # move printer to start positioning and clear camera polling buffer
             slowMove(prtConn, y= -round(bedMoveIncrement*3,1)) # start before subject
+            result = getLastEvent(r5Session) #clear polling buffer in camera
+
             startTime = datetime.now()
             for x in range(numShots):
                 slowMove(prtConn, y=bedMoveIncrement)
@@ -129,10 +133,24 @@ try:
             stopTime = datetime.now()
             print("\n\t ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             print("\t    shot sequence completed. Elapsed time = ", (stopTime-startTime))
-            paramTxt = "\n\tFStop= {fStop} Lens_length = {fLen} distance_to_object = {sDist} subject_size = {sLen}"
+            paramTxt = "\n\tFStop= {fStop} Lens_length = {fLen}mm distance_to_object = {sDist}mm subject_size = {sLen}mm"
             print(paramTxt.format(fStop=fStop, fLen=focalLen, sDist=subjectDist, sLen=subjectLen))
             printShotEstimate(bedMoveIncrement, numShots) # tell user about time info for these shots
+            # report image file names that were captured
+            result = getLastEvent(r5Session)         # get all events from polling buffer
+            addedList = result.get("addedcontents")  # only care about image(s) added
+            print("\tImages captured:")
+            for image in range(len(addedList)):
+                print("\t\t",addedList[image])
+            print("\t\t total image count = ", len(addedList))
             print("\n\t ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
+            # see if files should be copied
+            cf = input("\n\t Copy files from camera to local directory?  y or n: ")
+            if "Y" == cf.upper():
+                copyFiles(r5Session, addedList)
+            else:
+                print(" \t...Files requested not to be copied locally")
 
         else:
             print("-" * 45)
