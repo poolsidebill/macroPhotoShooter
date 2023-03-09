@@ -37,5 +37,5 @@ Code base was written in Python 3 and tested on Linux Mint 20.3
 - Checks to ensure subject length isn't too large for bed movement from current starting point
 - Planning only option. Display various Depth of Field values and projected image counts for various F-Stop and subject lengths
 - Lighting monitor. Precheck lighting conditions between starting and ending bed postions with the subject
-- Move images from camera to computer (via CCAPI) for later image stacking
+- **Added 08Mar23** ~~Move images from camera to computer (via CCAPI) for later image stacking~~
 - Update code comments
