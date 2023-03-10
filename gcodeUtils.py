@@ -5,70 +5,88 @@
    complete current command in buffer before accepting next command.
 """
 import serial
-import time,  math
-from datetime import datetime
+import time, math
 
 def sendGCodeCmd(ser, command):
-  start_time = datetime.now()
-  cmdResponse = ""
-  print("\t Sending GCode command: ", command.strip("\r\n"))
-  ser.write(str.encode(command)) # serial write is a blocking command
-  time.sleep(0.4)
+    cmdResponse = ""
+    print("\t Sending GCode command: ", command.strip("\r\n"))
+    ser.write(str.encode(command))  # serial write is a blocking command
+    time.sleep(0.4)
 
-  while True:
-    line = ser.readline()
-    print("\t cmd resp: ",line)
-    if not line == b'ok\n':
-        cmdResponse = line
-    elif line == b'ok\n':
-        # there is room in buffer for another command
-      stop_time = datetime.now()
-      break
+    while True:
+        line = ser.readline()
+        print("\t cmd resp: ", line)
+        if not line == b"ok\n":
+            cmdResponse = line
+        elif line == b"ok\n":
+            # there is room in buffer for another command
+            break
 
-  #print("\t GCode command response received, time=",stop_time-start_time)
-  return cmdResponse
+    return cmdResponse
+
 
 def connect3dPrinter():
-    serialConn = serial.Serial('/dev/ttyUSB0', 256000) # Mega I3 Marlin FW v1.1.9
-    time.sleep(5) # let printer board do its thing
-    print("\t serial port is open: ", serialConn.is_open )
-    #return serialConn, serialConn.isOpen()
+    serialConn = serial.Serial("/dev/ttyUSB0", 256000)  # Mega I3 Marlin FW v1.1.9
+    time.sleep(5)  # let printer board do its thing
+    print("\t serial port is open: ", serialConn.is_open)
+    # return serialConn, serialConn.isOpen()
     return serialConn, serialConn.is_open
 
-def beep3dPrinter(serConn):
-    sendGCodeCmd(serConn, "M300 S440 P200\r\n") # print completed sound - Marlin FW
 
-def homePrinter(serConn):
-    sendGCodeCmd(serConn, "G28\r\n") # Home
-    sendGCodeCmd(serConn, "M400\r\n") # wait for buffered command to finish
+def beep3dPrinter(serConn):
+    sendGCodeCmd(serConn, "M300 S440 P200\r\n")  # print completed sound - Marlin FW
+
+
+def homePrinter(serConn, ignoreZ=True):
+    """ Send X-axis and Y-axis to their stops
+
+    Default only moves X and Y axises and ignores Z position since this utility
+    is primarily used to control the printer bed.
+    """
+    if ignoreZ is True:
+        sendGCodeCmd(serConn, "G28 X Y\r\n")  # Home only X and Y
+    else:
+        sendGCodeCmd(serConn, "G28\r\n")  # Home all axises
+
+    sendGCodeCmd(serConn, "M400\r\n")  # wait for buffered command to finish
+
 
 def quickMove(serConn, x=math.nan, y=math.nan, z=math.nan):
     cmd = "G0 "
-    if not math.isnan(x): cmd = "%s X%s " %(cmd, x)
-    if not math.isnan(y): cmd = "%s Y%s " %(cmd, y)
-    if not math.isnan(z): cmd = "%s Z%s " %(cmd, z)
-    sendGCodeCmd(serConn, cmd+"\r\n") #
-    sendGCodeCmd(serConn, "M400\r\n") # wait for buffered command to finish
+    if not math.isnan(x):
+        cmd = "%s X%s " % (cmd, x)
+    if not math.isnan(y):
+        cmd = "%s Y%s " % (cmd, y)
+    if not math.isnan(z):
+        cmd = "%s Z%s " % (cmd, z)
+    sendGCodeCmd(serConn, cmd + "\r\n")  #
+    sendGCodeCmd(serConn, "M400\r\n")  # wait for buffered command to finish
+
 
 def slowMove(serConn, x=math.nan, y=math.nan, z=math.nan, feedRate=120):
     cmd = "G0 "
-    if not math.isnan(x): cmd = "%s X%s " %(cmd, x)
-    if not math.isnan(y): cmd = "%s Y%s " %(cmd, y)
-    if not math.isnan(z): cmd = "%s Z%s " %(cmd, z)
-    cmd = "%s F%s\r\n" %(cmd, feedRate)
-    sendGCodeCmd(serConn, cmd) #
-    sendGCodeCmd(serConn, "M400\r\n") # wait for buffered command to finish
+    if not math.isnan(x):
+        cmd = "%s X%s " % (cmd, x)
+    if not math.isnan(y):
+        cmd = "%s Y%s " % (cmd, y)
+    if not math.isnan(z):
+        cmd = "%s Z%s " % (cmd, z)
+    cmd = "%s F%s\r\n" % (cmd, feedRate)
+    sendGCodeCmd(serConn, cmd)  #
+    sendGCodeCmd(serConn, "M400\r\n")  # wait for buffered command to finish
+
 
 def getBedPositon(serConn):
     # example of returned bytes object from printer
     # "b'X:1.00 Y:10.01 Z:175.00 E:0.00 Count X:3200 Y:6000 Z:70000\n'"
-    axis = sendGCodeCmd(serConn, "M114\r\n") # report all axises
-    axisStr = axis.decode() # convert bytes to string
-    cutString = axisStr.split(':')
+    axis = sendGCodeCmd(serConn, "M114\r\n")  # report all axises
+    axisStr = axis.decode()  # convert bytes to string
+    cutString = axisStr.split(":")
     x = float(cutString[1][:-2])
     y = float(cutString[2][:-2])
     z = float(cutString[3][:-2])
-    return x,y,z
+    return x, y, z
+
 
 def printBedPosition(serConn):
     x, y, z = getBedPositon(serConn)
@@ -77,68 +95,81 @@ def printBedPosition(serConn):
 
 
 def setAbsPositioning(serConn):
-    sendGCodeCmd(serConn, "G90\r\n") # absolute positioning
+    sendGCodeCmd(serConn, "G90\r\n")  # absolute positioning
+
 
 def setRelPositioning(serConn):
-    sendGCodeCmd(serConn, "G91\r\n") # relative positioning
+    sendGCodeCmd(serConn, "G91\r\n")  # relative positioning
+
 
 def setInchUnits(serConn):
-    sendGCodeCmd(serConn, "G20\r\n") # set machine to use inches
+    sendGCodeCmd(serConn, "G20\r\n")  # set machine to use inches
+
 
 def setMmUnits(serConn):
-    sendGCodeCmd(serConn, "G21\r\n") # set machine to use millimeters
+    sendGCodeCmd(serConn, "G21\r\n")  # set machine to use millimeters
+
 
 def setPosition(serConn, x=math.nan, y=math.nan, z=math.nan):
     cmd = "G92 "
-    if not math.isnan(x): cmd = "%s X%s " %(cmd, x)
-    if not math.isnan(y): cmd = "%s Y%s " %(cmd, y)
-    if not math.isnan(z): cmd = "%s Z%s " %(cmd, z)
-    sendGCodeCmd(serConn, cmd+"\r\n") #
+    if not math.isnan(x):
+        cmd = "%s X%s " % (cmd, x)
+    if not math.isnan(y):
+        cmd = "%s Y%s " % (cmd, y)
+    if not math.isnan(z):
+        cmd = "%s Z%s " % (cmd, z)
+    sendGCodeCmd(serConn, cmd + "\r\n")  #
 
-def savePosition(serConn, slotNum=0): # not suppported by my 3dPrinter
-    cmd = "G60 S"+str(slotNum)
-    sendGCodeCmd(serConn, cmd+"\r\n")
+
+def savePosition(serConn, slotNum=0):  # not suppported by my 3dPrinter
+    cmd = "G60 S" + str(slotNum)
+    sendGCodeCmd(serConn, cmd + "\r\n")
+
 
 def gotoSavedPos(serConn, slotNum=0):  # not suppported by my 3dPrinter
-    cmd = "G61 F120 XYZ S"+str(slotNum)
-    sendGCodeCmd(serConn, cmd+"\r\n")
+    cmd = "G61 F120 XYZ S" + str(slotNum)
+    sendGCodeCmd(serConn, cmd + "\r\n")
+
 
 def setOrigin(serConn):
-    setPosition(serConn, x=0, y=0) # force new xy positoins, Z remains the same
-    #savePosition(serConn, slotNum=0 ) # save origin in slot #0
+    setPosition(serConn, x=0, y=0)  # force new xy positoins, Z remains the same
+    # savePosition(serConn, slotNum=0 ) # save origin in slot #0
+
 
 def gotoOrigin(serConn):
     slowMove(serConn, x=0, y=0, feedRate=120)
 
+
 # Main
 def main():
     ser, result = connect3dPrinter()
-    print("printer connected: ",result)
+    print("printer connected: ", result)
 
     homePrinter(ser)
     x, y, z = getBedPositon(ser)
     bedPosTxt = "Bed Position: x={x} y={y} z={z}"
-    print(bedPosTxt.format(x=x, y=y, z=z)) # s/b  x=-5.0 y=0.0 z=0.0
+    print(bedPosTxt.format(x=x, y=y, z=z))  # s/b  x=-5.0 y=0.0 z=0.0
 
     quickMove(ser, x=10, y=20, z=40)
     x, y, z = getBedPositon(ser)
-    print(bedPosTxt.format(x=x, y=y, z=z)) # s/b x=10.0 y=20.0 z=40.0
+    print(bedPosTxt.format(x=x, y=y, z=z))  # s/b x=10.0 y=20.0 z=40.0
 
-    setRelPositioning(ser) #91
+    setRelPositioning(ser)  # 91
     slowMove(ser, y=10, feedRate=60)
     x, y, z = getBedPositon(ser)
-    print(bedPosTxt.format(x=x, y=y, z=z)) # s/b x=10.0 y=20.0 z=40.0
+    print(bedPosTxt.format(x=x, y=y, z=z))  # s/b x=10.0 y=20.0 z=40.0
 
-    setOrigin(ser) # sets x=0 y=0 z=staysAtCurrentValue
+    setOrigin(ser)  # sets x=0 y=0 z=staysAtCurrentValue
     x, y, z = getBedPositon(ser)
-    print(bedPosTxt.format(x=x, y=y, z=z)) # s/b x=0.0 y=0.0 z=40.0
+    print(bedPosTxt.format(x=x, y=y, z=z))  # s/b x=0.0 y=0.0 z=40.0
 
     slowMove(ser, y=10, feedRate=60)
     x, y, z = getBedPositon(ser)
-    print(bedPosTxt.format(x=x, y=y, z=z)) # s/b x=0.0 y=10.0 z=40.0
+    print(bedPosTxt.format(x=x, y=y, z=z))  # s/b x=0.0 y=10.0 z=40.0
 
     time.sleep(1)
     ser.close()
+
 
 if __name__ == "__main__":
     main()
