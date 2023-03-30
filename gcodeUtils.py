@@ -90,7 +90,7 @@ def getBedPositon(serConn):
 
 def printBedPosition(serConn):
     x, y, z = getBedPositon(serConn)
-    bedPosTxt = "\nBed Position: x={x} y={y} z={z}"
+    bedPosTxt = "\tBed Position: x={x} y={y} z={z}"
     print(bedPosTxt.format(x=x, y=y, z=z))
 
 
@@ -139,13 +139,46 @@ def setOrigin(serConn):
 def gotoOrigin(serConn):
     slowMove(serConn, x=0, y=0, feedRate=120)
 
+def moveAxisZ(serConn):
+    dirVal = ['Unknown', 'UP','DOWN']
+
+    print("\n\t Move the Z axis. Specify the following:")
+    print("\t\t Direction: Up = '+'  Down = '-'")
+    print("\t\t Distance in mm")
+    print("\t\t    example: UP 170mm -> +170 or DOWN 23.4mm -> -23.4")
+    while True:
+        moveInput = input("\n\t Enter direction and distance:  ")
+        if not moveInput == "":
+            if moveInput[0] == '-' :
+                direction = -1  # DOWN
+            elif moveInput[0] == '+':
+                direction = 1 # UP
+            else:
+                direction = 0  # Unknown
+
+            try:
+                dist = float(moveInput[1:])
+                print("\t requested movement: {} {}mm".format(dirVal[direction], dist))
+                if not direction == 0:
+                    setRelPositioning(serConn)
+                    slowMove(serConn, z=(dist*direction))
+                    break
+                else:
+                    print("\t Invalid entry for direction. Specify '+' or '-'")
+
+            except Exception as ex:
+                print("\n\t Exception: Invalid entry for distance. \n",ex)
+        else:
+            print("\t Invalid entry")
+
 
 # Main
 def main():
+
     ser, result = connect3dPrinter()
     print("printer connected: ", result)
 
-    homePrinter(ser)
+    homePrinter(ser, False) # home all three axises
     x, y, z = getBedPositon(ser)
     bedPosTxt = "Bed Position: x={x} y={y} z={z}"
     print(bedPosTxt.format(x=x, y=y, z=z))  # s/b  x=-5.0 y=0.0 z=0.0
@@ -166,6 +199,8 @@ def main():
     slowMove(ser, y=10, feedRate=60)
     x, y, z = getBedPositon(ser)
     print(bedPosTxt.format(x=x, y=y, z=z))  # s/b x=0.0 y=10.0 z=40.0
+
+    moveAxisZ(ser)
 
     time.sleep(1)
     ser.close()
